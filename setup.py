@@ -36,6 +36,7 @@ setup(
     install_requires=[
         "colorama",
         "PyYAML",
+        "tabulate"
     ],
     setup_requires=["pytest-runner"] if testing else [],
     tests_require=["pytest", "cram", "pytest-cram"],

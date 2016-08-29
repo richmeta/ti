@@ -12,6 +12,7 @@ from collections import defaultdict
 from ti.colors import red, yellow, green
 from ti.utils import datetime, parse_isotime, timegap
 from ti import store
+from tabulate import tabulate
 
 
 def action_on(name, time):
@@ -127,7 +128,6 @@ def action_log(period):
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
-    name_col_len = 0
 
     for item in work:
         start_time = parse_isotime(item['start'])
@@ -139,8 +139,6 @@ def action_log(period):
             current = item['name']
 
     for name, item in log.items():
-        name_col_len = max(name_col_len, len(name))
-
         secs = item['delta'].seconds
         tmsg = []
 
@@ -164,13 +162,12 @@ def action_log(period):
         log_list.append(
             (
                 name,
-                item['delta'],
-                item['tmsg']
+                item['tmsg'],
+                ' ← working' if current == name else ''
             )
         )
-    for name, delta, tmsg in sorted(log_list, key=lambda x: x[0], reverse=True):
-        print(name.ljust(name_col_len), ' ∙∙ ', tmsg,
-              end=' ← working\n' if current == name else '\n')
+    data = sorted(log_list, key=lambda x: x[0], reverse=True)
+    print(tabulate(data))
 
 
 def action_edit():

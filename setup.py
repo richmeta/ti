@@ -3,6 +3,7 @@ import io
 import sys
 
 from setuptools import find_packages, setup
+import ti
 
 
 def read(*filenames, **kwargs):
@@ -18,7 +19,7 @@ testing = bool({'pytest', 'test'}.intersection(sys.argv))
 
 setup(
     name="ti",
-    version="0.1.1.dev0",
+    version=ti.__version__,
     author="Shrikant Sharat",
     author_email="shrikantsharat.k@gmail.com",
     packages=find_packages(),
@@ -29,10 +30,14 @@ setup(
     long_description=read('README.rst', 'CHANGES.rst'),
     entry_points={
         'console_scripts': [
-            'ti = ti:main',
+            'ti = ti.time_tracking:main',
         ]
     },
-    install_requires=["colorama", "pyyaml"],
+    install_requires=[
+        "colorama",
+        "PyYAML",
+        "tabulate"
+    ],
     setup_requires=["pytest-runner"] if testing else [],
     tests_require=["pytest", "cram", "pytest-cram"],
     extras_require={

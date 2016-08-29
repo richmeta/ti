@@ -3,6 +3,7 @@ import io
 import sys
 
 from setuptools import find_packages, setup
+import ti
 
 
 def read(*filenames, **kwargs):
@@ -18,7 +19,7 @@ testing = bool({'pytest', 'test'}.intersection(sys.argv))
 
 setup(
     name="ti",
-    version="0.1.1.dev0",
+    version=ti.__version__,
     author="Shrikant Sharat",
     author_email="shrikantsharat.k@gmail.com",
     packages=find_packages(),

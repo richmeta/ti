@@ -97,11 +97,23 @@ class Actions(object):
         #     else:
         #         print('Congrats, you\'re out of interrupts!')
 
-    def action_status(self):
-        current = self.ensure_working()
-        diff = pendulum.now().diff_for_humans(current['start'], absolute=True)
-        print('You have been working on {0} for {1}.'.format(
-            green(current['task']), diff))
+    def action_status(self, short):
+        try:
+            current = self.ensure_working(silent=short)
+
+            diff = pendulum.now().diff_for_humans(current['start'], absolute=True)
+            if short:
+                print('on {}/{} for {}.'.format(
+                    red(current['project']),
+                    green(current['task']),
+                    diff))
+            else:
+                print('You have been working on {0} for {1}.'.format(
+                    green(current['task']), diff))
+
+        except SystemExit:
+            if short:
+                print('idle')
 
     def action_log(self, period):
         now = pendulum.now()
@@ -380,12 +392,14 @@ class Actions(object):
         self.subtotals_count += 1
         return sum
 
-    def ensure_working(self):
+    def ensure_working(self, silent=False):
         current = self.store.get_current()
         if current:
             return current
 
-        print("For all I know, you aren't working on anything. "
-              "I don't know what to do.", file=sys.stderr)
-        print('See `ti -h` to know how to start working.', file=sys.stderr)
+        if not silent:
+            print("For all I know, you aren't working on anything. "
+                  "I don't know what to do.", file=sys.stderr)
+            print('See `ti -h` to know how to start working.', file=sys.stderr)
+
         raise SystemExit(1)

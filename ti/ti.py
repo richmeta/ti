@@ -142,9 +142,11 @@ Old commands:
         parser = argparse.ArgumentParser(
             prog='ti status',
             description='Get current status')
+        parser.add_argument('--short', default=False, action="store_true",
+                            help="short status ideal for integration to other tools e.g. bash prompt")
 
         args = parser.parse_args(sys.argv[2:])
-        self.actions.action_status()
+        self.actions.action_status(**vars(args))
 
     def log(self):
         parser = argparse.ArgumentParser(

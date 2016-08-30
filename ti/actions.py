@@ -2,21 +2,19 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import pendulum
 import yaml
 import os
 import subprocess
 import sys
 import tempfile
+from pytimeparse.timeparse import timeparse
 from datetime import timedelta
 from collections import defaultdict
-from ti.colors import red, yellow, green
-from ti.utils import datetime, parse_isotime, timegap
-# from ti import store
 from tabulate import tabulate
-from ti.store import Store
+from .store import Store
 from .git import Git
-import pendulum
-from pytimeparse.timeparse import timeparse
+from .colors import red, yellow, green
 from .utils import seconds_to_hours_and_minutes
 
 

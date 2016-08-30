@@ -39,7 +39,8 @@ class Actions(object):
         # project not set
         if project is None:
             if git_support:
-                project = os.path.basename(git.get_top_level())
+                project_path = git.get_top_level()[1:]
+                project = str(project_path).replace('/', '-')
 
         if task is None:
             if git_support:

@@ -35,7 +35,9 @@ setup(
     install_requires=[
         "colorama",
         "PyYAML",
-        "tabulate"
+        "tabulate",
+        "pendulum>=0.5.0",
+        "pytimeparse",
     ],
     setup_requires=["pytest-runner"] if testing else [],
     tests_require=["pytest", "cram", "pytest-cram"],

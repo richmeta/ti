@@ -2,7 +2,7 @@
 import os
 import json
 
-__version__ = '0.1.1.dev1'
+__version__ = '0.1.1.dev2'
 
 
 class JsonStore(object):

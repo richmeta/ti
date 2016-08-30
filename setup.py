@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import io
 import sys
-
 from setuptools import find_packages, setup
 import ti
 
@@ -30,7 +29,7 @@ setup(
     long_description=read('README.rst', 'CHANGES.rst'),
     entry_points={
         'console_scripts': [
-            'ti = ti.time_tracking:main',
+            'ti = ti.ti:main',
         ]
     },
     install_requires=[

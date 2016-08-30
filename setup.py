@@ -19,12 +19,12 @@ testing = bool({'pytest', 'test'}.intersection(sys.argv))
 setup(
     name="ti",
     version=ti.__version__,
-    author="Shrikant Sharat",
-    author_email="shrikantsharat.k@gmail.com",
+    author="Shrikant Sharat, Trevor Bekolay, Eduard Kracmar",
+    author_email="shrikantsharat.k@gmail.com, tbekolay@gmail.com, eduard@adaptiware.com",
     packages=find_packages(),
     include_package_data=True,
     scripts=[],
-    url="http://ti.sharats.me/",
+    url="https://github.com/tbekolay/ti",
     description="A silly simple time tracker",
     long_description=read('README.rst', 'CHANGES.rst'),
     entry_points={

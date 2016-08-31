@@ -36,7 +36,7 @@ setup(
         "colorama",
         "PyYAML",
         "tabulate",
-        "pendulum>=0.5.0",
+        "pendulum==0.5.2",
         "pytimeparse",
     ],
     setup_requires=["pytest-runner"] if testing else [],

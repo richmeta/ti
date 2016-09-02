@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+/.env/
 .Python
 env/
 build/
@@ -23,6 +24,9 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# IDE's
+/.idea
 
 # Installer logs
 pip-log.txt

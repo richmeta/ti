@@ -348,7 +348,7 @@ def parse_isotime(isotime):
 def timegap(start_time, end_time):
     diff = end_time - start_time
 
-    mins = diff.seconds / 60
+    mins = diff.total_seconds() / 60
 
     if mins == 0:
         return 'less than a minute'

@@ -29,6 +29,7 @@ Options:
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools as ft
 import json
 import os
 import re
@@ -118,6 +119,21 @@ def blue(str):
         return Fore.BLUE + str + Fore.RESET
     else:
         return str
+
+
+strip_color = ft.partial(
+        re.compile("(\x9B|\x1B\\[)[0-?]*[ -\/]*[@-~]").sub, "")
+strip_color.func_doc = "Strip color from string."
+
+
+def len_color(str):
+    "Compute how long the color escape sequences in the string are."
+    return len(str) - len(strip_color(str))
+
+
+def ljust_with_color(str, n):
+    "ljust string that might contain color"
+    return str.ljust(n + len_color(str))
 
 
 def action_on(name, time):
@@ -242,7 +258,7 @@ def action_log(period):
     name_col_len = 0
 
     for name, item in log.items():
-        name_col_len = max(name_col_len, len(name))
+        name_col_len = max(name_col_len, len(strip_color(name)))
 
         secs = item['delta'].total_seconds()
         tmsg = []
@@ -263,7 +279,7 @@ def action_log(period):
         log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
 
     for name, item in sorted(log.items(), key=(lambda x: x[1]), reverse=True):
-        print(name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
+        print(ljust_with_color(name, name_col_len), ' ∙∙ ', item['tmsg'],
               end=' ← working\n' if current == name else '\n')
 
 

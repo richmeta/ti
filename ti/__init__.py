@@ -35,6 +35,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
@@ -243,6 +244,7 @@ def action_status():
 
 
 def action_log(period):
+    only_period = parse_period(period)
     data = store.load()
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
@@ -251,11 +253,15 @@ def action_log(period):
     for item in work:
         start_time = parse_isotime(item['start'])
         if 'end' in item:
-            log[item['name']]['delta'] += (
-                parse_isotime(item['end']) - start_time)
+            end_time = parse_isotime(item['end'])
         else:
-            log[item['name']]['delta'] += datetime.utcnow() - start_time
+            end_time = datetime.utcnow()
             current = item['name']
+        period = Period(start_time, end_time)
+        if only_period:
+            period = only_period.intersection(period)
+        if period:
+            log[item['name']]['delta'] += period.duration()
 
     name_col_len = 0
 
@@ -279,6 +285,10 @@ def action_log(period):
             tmsg.append(str(secs) + ' second' + ('s' if secs > 1 else ''))
 
         log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
+
+    if only_period is not None:
+        print("Period:", utc_to_local(only_period.from_tm), " - ",
+              utc_to_local(only_period.to_tm))
 
     for name, item in sorted(log.items(), key=(lambda x: x[0]), reverse=True):
         print(ljust_with_color(name, name_col_len), ' ∙∙ ', item['tmsg'],
@@ -388,6 +398,68 @@ def timegap(start_time, end_time):
         return 'about {} months'.format(mins // 43200)
     else:
         return 'more than a year'
+
+
+class Period(object):
+    """Represents a period of time.
+
+    It does not allow empty durations (from time == to time), nor invalid
+    ranges where from time is later than to time.
+
+    It allows from OR to date to be None (but not both) to have unbounded
+    periods, that can represent a time period before / after a date.
+    """
+
+    def __init__(self, from_tm=None, to_tm=None):
+        if from_tm is not None and to_tm is not None and from_tm >= to_tm:
+            raise ValueError('from_tm is later than to_tm')
+        if from_tm is None and to_tm is not None:
+            raise ValueError('period completely unbound: no from, no to')
+        self.from_tm = from_tm
+        self.to_tm = to_tm
+
+    def intersection(self, other_period):
+        def imin(val_a, val_b):
+            if val_a is None:
+                return val_b
+            if val_b is None:
+                return val_a
+            return min(val_a, val_b)
+        from_tm = max(self.from_tm, other_period.from_tm)
+        to_tm = imin(self.to_tm, other_period.to_tm)
+        if from_tm >= to_tm:
+            return None
+        return Period(from_tm, to_tm)
+
+    def contains(self, other_period):
+        return bool(self.intersection(other_period) is not None)
+
+    def bounded(self):
+        return bool(self.from_tm is not None and self.to_tm is not None)
+
+    def duration(self):
+        if not self.bounded():
+            raise ValueError('Unbounded period')
+        else:
+            return self.to_tm - self.from_tm
+
+
+def local_to_utc(in_datetime):
+    return in_datetime + timedelta(seconds=time.timezone)
+
+
+def utc_to_local(in_datetime):
+    return in_datetime - timedelta(seconds=time.timezone)
+
+
+def parse_period(period):
+    """Converts string period to a Period instance."""
+    if period == 'today':
+        now = datetime.now()
+        from_tm = local_to_utc(datetime(now.year, now.month, now.day))
+        to_tm = from_tm + timedelta(days=1)
+        return Period(from_tm, to_tm)
+    return None
 
 
 def parse_args(argv=sys.argv):

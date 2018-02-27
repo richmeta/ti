@@ -285,6 +285,22 @@ def action_log(period):
               end=' ← working\n' if current == name else '\n')
 
 
+
+def action_csv():
+    data = store.load()
+    work = data['work']
+
+    for item in work:
+        start_time = parse_isotime(item['start'])
+        if 'end' in item:
+            notes=''
+            if 'notes' in item:
+                for note in item['notes']:
+                    notes+='; ' + note
+            duration = parse_isotime(item['end']) - parse_isotime(item['start'])
+            print(item['name'], ',' , item['start'] , ',' , item['end'], ',', duration ,', ' , notes)
+
+
 def action_edit():
     if "EDITOR" not in os.environ:
         raise NoEditor("Please set the 'EDITOR' environment variable")
@@ -439,6 +455,10 @@ def parse_args(argv=sys.argv):
     elif head in ['l', 'log']:
         fn = action_log
         args = {'period': tail[0] if tail else None}
+
+    elif head in ['csv']:
+        fn = action_csv
+        args = {}
 
     elif head in ['t', 'tag']:
         if not tail:

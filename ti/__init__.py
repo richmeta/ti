@@ -337,6 +337,13 @@ def parse_engtime(timestr):
     if not timestr or timestr.strip() == 'now':
         return now
 
+    try:
+        today = datetime.today()
+        settime = datetime.strptime(timestr, "%H:%M")
+        return today.replace(hour=settime.hour, minute=settime.minute, second=0, microsecond=1)
+    except:
+        pass
+
     match = re.match(r'(\d+|a) \s* (s|secs?|seconds?) \s+ ago $',
                      timestr, re.X)
     if match is not None:

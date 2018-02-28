@@ -436,7 +436,7 @@ def parse_args(argv=sys.argv):
         fn = action_edit
         args = {}
 
-    elif head in ['o', 'on']:
+    elif head in ['o', 'on' , 'start']:
         if not tail:
             raise BadArguments("Need the name of whatever you are working on.")
 
@@ -446,7 +446,7 @@ def parse_args(argv=sys.argv):
             'time': to_datetime(' '.join(tail[1:])),
         }
 
-    elif head in ['f', 'fin']:
+    elif head in ['f', 'fin', 'stop']:
         fn = action_fin
         args = {'time': to_datetime(' '.join(tail))}
 

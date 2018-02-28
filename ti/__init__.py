@@ -284,9 +284,11 @@ def action_log(period):
         print(ljust_with_color(name, name_col_len), ' ∙∙ ', item['tmsg'],
               end=' ← working\n' if current == name else '\n')
 
-
+def format_csv_time(somedatetime):
+    return parse_isotime(somedatetime).strftime('%Y-%m-%d %H:%M:%S')
 
 def action_csv():
+    sep = '|'
     data = store.load()
     work = data['work']
 
@@ -296,9 +298,9 @@ def action_csv():
             notes=''
             if 'notes' in item:
                 for note in item['notes']:
-                    notes+='; ' + note
+                    notes+= note + ' ; '
             duration = parse_isotime(item['end']) - parse_isotime(item['start'])
-            print(item['name'], ',' , item['start'] , ',' , item['end'], ',', duration ,', ' , notes)
+            print(item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, duration, sep, notes)
 
 
 def action_edit():

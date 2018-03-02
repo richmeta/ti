@@ -35,6 +35,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import calendar
+
+import pytz # $ pip install pytz
+from tzlocal import get_localzone # $ pip install tzlocal
+
+
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
@@ -91,6 +97,7 @@ class JsonStore(object):
         with open(self.filename, 'w') as f:
             json.dump(data, f, separators=(',', ': '), indent=2)
 
+local_tz = get_localzone() 
 
 def red(str):
     if use_color:
@@ -285,7 +292,12 @@ def action_log(period):
               end=' ← working\n' if current == name else '\n')
 
 def format_csv_time(somedatetime):
-    return parse_isotime(somedatetime).strftime('%Y-%m-%d %H:%M:%S')
+    local_dt = isotime_utc_to_local(somedatetime)
+    return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+def extract_day(datetime_local_tz):
+    local_dt = isotime_utc_to_local(datetime_local_tz)
+    return local_dt.strftime('%Y-%m-%d')
 
 def action_csv():
     sep = '|'
@@ -300,7 +312,7 @@ def action_csv():
                 for note in item['notes']:
                     notes+= note + ' ; '
             duration = parse_isotime(item['end']) - parse_isotime(item['start'])
-            print(item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, duration, sep, notes)
+            print(extract_day(item['start']), sep, item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, duration, sep, notes , sep)
 
 
 def action_edit():
@@ -348,6 +360,17 @@ def ensure_working():
 def to_datetime(timestr):
     return parse_engtime(timestr).isoformat() + 'Z'
 
+def utc_to_local(utc_dt):
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_tz.normalize(local_dt)
+
+def local_to_utc(local_dt):
+    local_dt_dst = local_tz.localize(local_dt)
+    utc_dt = local_dt_dst.astimezone (pytz.utc)
+    return utc_dt.replace(tzinfo=None)
+
+def isotime_utc_to_local(isotime_utc):
+    return utc_to_local(parse_isotime(isotime_utc))
 
 def parse_engtime(timestr):
 
@@ -356,17 +379,21 @@ def parse_engtime(timestr):
         return now
 
     try:
-        today = datetime.today()
         settime = datetime.strptime(timestr, "%H:%M")
-        return today.replace(hour=settime.hour, minute=settime.minute, second=0, microsecond=1)
-    except:
-        pass
+        x = now.replace(hour=settime.hour, minute=settime.minute, second=0, microsecond=1)
+        return local_to_utc(x)
+    except Exception, e:
+        print(e)
+        #pass
 
     match = re.match(r'(\d+|a) \s* (s|secs?|seconds?) \s+ ago $',
                      timestr, re.X)
     if match is not None:
         n = match.group(1)
         seconds = 1 if n == 'a' else int(n)
+        diff = now - timedelta(seconds=seconds)
+        print (diff)
+        print(isotime_utc_to_local(diff.isoformat() + 'Z'))
         return now - timedelta(seconds=seconds)
 
     match = re.match(r'(\d+|a) \s* (mins?|minutes?) \s+ ago $', timestr, re.X)

@@ -248,6 +248,10 @@ def action_status():
     print('You have been working on {0} for {1}.'.format(
         green(current['name']), diff))
 
+    if 'notes' in current:
+        for note in current['notes']:
+            print('  * ', note)
+
 
 def action_log(period):
     data = store.load()

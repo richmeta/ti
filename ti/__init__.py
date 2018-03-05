@@ -302,11 +302,14 @@ def action_log(period):
 
 def format_csv_time(somedatetime):
     local_dt = isotime_utc_to_local(somedatetime)
-    return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+    return local_dt.strftime('%H:%M')
 
 def extract_day(datetime_local_tz):
     local_dt = isotime_utc_to_local(datetime_local_tz)
     return local_dt.strftime('%Y-%m-%d')
+
+def remove_seconds(timedelta):
+    return ':'.join(str(timedelta).split(':')[:2])
 
 def action_csv():
     sep = '|'
@@ -321,7 +324,7 @@ def action_csv():
                 for note in item['notes']:
                     notes+= note + ' ; '
             duration = parse_isotime(item['end']) - parse_isotime(item['start'])
-            print(extract_day(item['start']), sep, item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, duration, sep, notes , sep)
+            print(extract_day(item['start']), sep, item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, remove_seconds(duration), sep, notes , sep)
 
 
 def action_edit():

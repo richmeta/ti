@@ -245,8 +245,13 @@ def action_status():
     start_time = parse_isotime(current['start'])
     diff = timegap(start_time, datetime.utcnow())
 
-    print('You have been working on {0} for {1}.'.format(
-        green(current['name']), diff))
+    isotime_local = isotime_utc_to_local(current['start'])
+    start_h_m = isotime_local.strftime('%H:%M')
+    now_time_str = datetime.now().strftime('%H:%M');
+
+    print('You have been working on {0} for {1}, since {2}; It is now {3}.'
+          .format(green(current['name']), yellow(diff), 
+                  yellow(start_h_m), yellow(now_time_str)))
 
     if 'notes' in current:
         for note in current['notes']:

@@ -35,6 +35,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import calendar
+
+import pytz # $ pip install pytz
+from tzlocal import get_localzone # $ pip install tzlocal
+
+
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
@@ -91,6 +97,7 @@ class JsonStore(object):
         with open(self.filename, 'w') as f:
             json.dump(data, f, separators=(',', ': '), indent=2)
 
+local_tz = get_localzone() 
 
 def red(str):
     if use_color:
@@ -238,8 +245,17 @@ def action_status():
     start_time = parse_isotime(current['start'])
     diff = timegap(start_time, datetime.utcnow())
 
-    print('You have been working on {0} for {1}.'.format(
-        green(current['name']), diff))
+    isotime_local = isotime_utc_to_local(current['start'])
+    start_h_m = isotime_local.strftime('%H:%M')
+    now_time_str = datetime.now().strftime('%H:%M');
+
+    print('You have been working on {0} for {1}, since {2}; It is now {3}.'
+          .format(green(current['name']), yellow(diff), 
+                  yellow(start_h_m), yellow(now_time_str)))
+
+    if 'notes' in current:
+        for note in current['notes']:
+            print('  * ', note)
 
 
 def action_log(period):
@@ -283,6 +299,32 @@ def action_log(period):
     for name, item in sorted(log.items(), key=(lambda x: x[0]), reverse=True):
         print(ljust_with_color(name, name_col_len), ' ∙∙ ', item['tmsg'],
               end=' ← working\n' if current == name else '\n')
+
+def format_csv_time(somedatetime):
+    local_dt = isotime_utc_to_local(somedatetime)
+    return local_dt.strftime('%H:%M')
+
+def extract_day(datetime_local_tz):
+    local_dt = isotime_utc_to_local(datetime_local_tz)
+    return local_dt.strftime('%Y-%m-%d')
+
+def remove_seconds(timedelta):
+    return ':'.join(str(timedelta).split(':')[:2])
+
+def action_csv():
+    sep = '|'
+    data = store.load()
+    work = data['work']
+
+    for item in work:
+        start_time = parse_isotime(item['start'])
+        if 'end' in item:
+            notes=''
+            if 'notes' in item:
+                for note in item['notes']:
+                    notes+= note + ' ; '
+            duration = parse_isotime(item['end']) - parse_isotime(item['start'])
+            print(extract_day(item['start']), sep, item['name'],sep , format_csv_time(item['start']) ,sep , format_csv_time(item['end']), sep, remove_seconds(duration), sep, notes , sep)
 
 
 def action_edit():
@@ -330,6 +372,17 @@ def ensure_working():
 def to_datetime(timestr):
     return parse_engtime(timestr).isoformat() + 'Z'
 
+def utc_to_local(utc_dt):
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_tz.normalize(local_dt)
+
+def local_to_utc(local_dt):
+    local_dt_dst = local_tz.localize(local_dt)
+    utc_dt = local_dt_dst.astimezone (pytz.utc)
+    return utc_dt.replace(tzinfo=None)
+
+def isotime_utc_to_local(isotime_utc):
+    return utc_to_local(parse_isotime(isotime_utc))
 
 def parse_engtime(timestr):
 
@@ -337,11 +390,22 @@ def parse_engtime(timestr):
     if not timestr or timestr.strip() == 'now':
         return now
 
+    try:
+        settime = datetime.strptime(timestr, "%H:%M")
+        x = now.replace(hour=settime.hour, minute=settime.minute, second=0, microsecond=1)
+        return local_to_utc(x)
+    except Exception, e:
+        print(e)
+        #pass
+
     match = re.match(r'(\d+|a) \s* (s|secs?|seconds?) \s+ ago $',
                      timestr, re.X)
     if match is not None:
         n = match.group(1)
         seconds = 1 if n == 'a' else int(n)
+        diff = now - timedelta(seconds=seconds)
+        print (diff)
+        print(isotime_utc_to_local(diff.isoformat() + 'Z'))
         return now - timedelta(seconds=seconds)
 
     match = re.match(r'(\d+|a) \s* (mins?|minutes?) \s+ ago $', timestr, re.X)
@@ -411,7 +475,7 @@ def parse_args(argv=sys.argv):
         fn = action_edit
         args = {}
 
-    elif head in ['o', 'on']:
+    elif head in ['o', 'on' , 'start']:
         if not tail:
             raise BadArguments("Need the name of whatever you are working on.")
 
@@ -421,7 +485,7 @@ def parse_args(argv=sys.argv):
             'time': to_datetime(' '.join(tail[1:])),
         }
 
-    elif head in ['f', 'fin']:
+    elif head in ['f', 'fin', 'stop']:
         fn = action_fin
         args = {'time': to_datetime(' '.join(tail))}
 
@@ -432,6 +496,10 @@ def parse_args(argv=sys.argv):
     elif head in ['l', 'log']:
         fn = action_log
         args = {'period': tail[0] if tail else None}
+
+    elif head in ['csv']:
+        fn = action_csv
+        args = {}
 
     elif head in ['t', 'tag']:
         if not tail:

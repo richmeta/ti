@@ -10,7 +10,7 @@ Usage:
   ti (s|status)
   ti (t|tag) <tag>...
   ti (n|note) <note-text>...
-  ti (l|log) [today]
+  ti (l|log) [today|yyyy-mm-dd]
   ti (e|edit)
   ti (i|interrupt)
   ti --no-color
@@ -247,9 +247,22 @@ def action_log(period):
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
-
+    comparedate = None
+    if period:
+        if period == "today":
+            comparedate = datetime.today()
+        else:
+            try:
+                comparedate = datetime.strptime(period, "%Y-%m-%d")
+            except ValueError:
+                print("Please use dateformat yyyy-mm-dd")
     for item in work:
         start_time = parse_isotime(item['start'])
+        if (period and (start_time.year != comparedate.year or
+                start_time.month != comparedate.month or
+                start_time.day != comparedate.day)):
+            continue
+
         if 'end' in item:
             log[item['name']]['delta'] += (
                 parse_isotime(item['end']) - start_time)

@@ -347,7 +347,7 @@ def to_datetime(timestr):
 
 def parse_engtime(timestr):
 
-    now = datetime.utcnow()
+    now = datetime.now()
     if not timestr or timestr.strip() == 'now':
         return now
 
@@ -402,7 +402,6 @@ def timegap(start_time, end_time):
         return 'about {} months'.format(mins // 43200)
     else:
         return 'more than a year'
-
 
 def parse_args(argv=sys.argv):
     global use_color

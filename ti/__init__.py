@@ -44,6 +44,9 @@ import yaml
 from colorama import Fore
 
 
+NOW = datetime.now().replace(second=0, microsecond=0)
+
+
 class TIError(Exception):
     """Errors raised by TI."""
 
@@ -237,7 +240,7 @@ def action_status():
     current = data['work'][-1]
 
     start_time = parse_isotime(current['start'])
-    diff = timegap(start_time, datetime.now())
+    diff = timegap(start_time, NOW)
 
     print('You have been working on {0} for {1}.'.format(
         green(current['name']), diff))
@@ -251,7 +254,8 @@ def action_log(period):
     comparedate = None
     if period:
         if period == "today":
-            comparedate = datetime.today()
+            comparedate = NOW
+
         else:
             try:
                 comparedate = datetime.strptime(period, "%Y-%m-%d")
@@ -260,15 +264,15 @@ def action_log(period):
     for item in work:
         start_time = parse_isotime(item['start'])
         if (period and (start_time.year != comparedate.year or
-                start_time.month != comparedate.month or
-                start_time.day != comparedate.day)):
+                        start_time.month != comparedate.month or
+                        start_time.day != comparedate.day)):
             continue
 
         if 'end' in item:
             log[item['name']]['delta'] += (
                 parse_isotime(item['end']) - start_time)
         else:
-            log[item['name']]['delta'] += datetime.now() - start_time
+            log[item['name']]['delta'] += NOW - start_time
             current = item['name']
 
     name_col_len = 0
@@ -347,28 +351,27 @@ def to_datetime(timestr):
 
 def parse_engtime(timestr):
 
-    now = datetime.now()
     if not timestr or timestr.strip() == 'now':
-        return now
+        return NOW
 
     match = re.match(r'(\d+|a) \s* (s|secs?|seconds?) \s+ ago $',
                      timestr, re.X)
     if match is not None:
         n = match.group(1)
         seconds = 1 if n == 'a' else int(n)
-        return now - timedelta(seconds=seconds)
+        return NOW - timedelta(seconds=seconds)
 
     match = re.match(r'(\d+|a) \s* (mins?|minutes?) \s+ ago $', timestr, re.X)
     if match is not None:
         n = match.group(1)
         minutes = 1 if n == 'a' else int(n)
-        return now - timedelta(minutes=minutes)
+        return NOW - timedelta(minutes=minutes)
 
     match = re.match(r'(\d+|a|an) \s* (hrs?|hours?) \s+ ago $', timestr, re.X)
     if match is not None:
         n = match.group(1)
         hours = 1 if n in ['a', 'an'] else int(n)
-        return now - timedelta(hours=hours)
+        return NOW - timedelta(hours=hours)
 
     raise BadTime("Don't understand the time %r" % (timestr,))
 
@@ -402,6 +405,7 @@ def timegap(start_time, end_time):
         return 'about {} months'.format(mins // 43200)
     else:
         return 'more than a year'
+
 
 def parse_args(argv=sys.argv):
     global use_color

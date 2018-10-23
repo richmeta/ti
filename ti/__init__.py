@@ -268,7 +268,7 @@ def action_log(period):
             log[item['name']]['delta'] += (
                 parse_isotime(item['end']) - start_time)
         else:
-            log[item['name']]['delta'] += datetime.utcnow() - start_time
+            log[item['name']]['delta'] += datetime.now() - start_time
             current = item['name']
 
     name_col_len = 0

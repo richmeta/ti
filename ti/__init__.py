@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -237,7 +237,7 @@ def action_status():
     current = data['work'][-1]
 
     start_time = parse_isotime(current['start'])
-    diff = timegap(start_time, datetime.utcnow())
+    diff = timegap(start_time, datetime.now())
 
     print('You have been working on {0} for {1}.'.format(
         green(current['name']), diff))

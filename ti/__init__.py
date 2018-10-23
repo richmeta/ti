@@ -41,7 +41,6 @@ from collections import defaultdict
 from os import path
 
 import yaml
-from colorama import Fore
 
 
 NOW = datetime.now().replace(second=0, microsecond=0)
@@ -96,59 +95,13 @@ class JsonStore(object):
             json.dump(data, f, separators=(',', ': '), indent=2)
 
 
-def red(str):
-    if use_color:
-        return Fore.RED + str + Fore.RESET
-    else:
-        return str
-
-
-def green(str):
-    if use_color:
-        return Fore.GREEN + str + Fore.RESET
-    else:
-        return str
-
-
-def yellow(str):
-    if use_color:
-        return Fore.YELLOW + str + Fore.RESET
-    else:
-        return str
-
-
-def blue(str):
-    if use_color:
-        return Fore.BLUE + str + Fore.RESET
-    else:
-        return str
-
-
-color_regex = re.compile("(\x9B|\x1B\\[)[0-?]*[ -\/]*[@-~]")
-
-
-def strip_color(str):
-    """Strip color from string."""
-    return color_regex.sub("", str)
-
-
-def len_color(str):
-    """Compute how long the color escape sequences in the string are."""
-    return len(str) - len(strip_color(str))
-
-
-def ljust_with_color(str, n):
-    """ljust string that might contain color."""
-    return str.ljust(n + len_color(str))
-
-
 def action_on(name, time):
     data = store.load()
     work = data['work']
 
     if work and 'end' not in work[-1]:
         raise AlreadyOn("You are already working on %s. Stop it or use a "
-                        "different sheet." % (yellow(work[-1]['name']),))
+                        "different sheet." % (work[-1]['name'],))
 
     entry = {
         'name': name,
@@ -158,7 +111,7 @@ def action_on(name, time):
     work.append(entry)
     store.dump(data)
 
-    print('Start working on ' + green(name) + '.')
+    print('Start working on ' + name + '.')
 
 
 def action_fin(time, back_from_interrupt=True):
@@ -169,7 +122,7 @@ def action_fin(time, back_from_interrupt=True):
     current = data['work'][-1]
     current['end'] = time
     store.dump(data)
-    print('So you stopped working on ' + red(current['name']) + '.')
+    print('So you stopped working on ' + current['name'] + '.')
 
     if back_from_interrupt and len(data['interrupt_stack']) > 0:
         name = data['interrupt_stack'].pop()['name']
@@ -196,7 +149,7 @@ def action_interrupt(name, time):
     interrupt_stack.append(interrupted)
     store.dump(data)
 
-    action_on('interrupt: ' + green(name), time)
+    action_on('interrupt: ' + name, time)
     print('You are now %d deep in interrupts.' % len(interrupt_stack))
 
 
@@ -213,7 +166,7 @@ def action_note(content):
 
     store.dump(data)
 
-    print('Yep, noted to ' + yellow(current['name']) + '.')
+    print('Yep, noted to ' + current['name'] + '.')
 
 
 def action_tag(tags):
@@ -243,7 +196,7 @@ def action_status():
     diff = timegap(start_time, NOW)
 
     print('You have been working on {0} for {1}.'.format(
-        green(current['name']), diff))
+        current['name'], diff))
 
 
 def action_log(period):
@@ -278,7 +231,7 @@ def action_log(period):
     name_col_len = 0
 
     for name, item in log.items():
-        name_col_len = max(name_col_len, len(strip_color(name)))
+        name_col_len = max(name_col_len, len(name))
 
         secs = item['delta'].total_seconds()
         tmsg = []
@@ -299,7 +252,7 @@ def action_log(period):
         log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
 
     for name, item in sorted(log.items(), key=(lambda x: x[0]), reverse=True):
-        print(ljust_with_color(name, name_col_len), ' ∙∙ ', item['tmsg'],
+        print(name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
               end=' ← working\n' if current == name else '\n')
 
 
@@ -347,7 +300,6 @@ def ensure_working():
 
 def to_datetime(timestr):
     return parse_engtime(timestr).strftime('%Y-%m-%d %H:%M')
-
 
 
 def parse_engtime(timestr):
@@ -402,12 +354,6 @@ def timegap(start_time, end_time):
 
 
 def parse_args(argv=sys.argv):
-    global use_color
-
-    if '--no-color' in argv:
-        use_color = False
-        argv.remove('--no-color')
-
     # prog = argv[0]
     if len(argv) == 1:
         raise BadArguments("You must specify a command.")
@@ -486,7 +432,6 @@ def main():
 
 store = JsonStore(os.getenv('SHEET_FILE', None) or
                   os.path.expanduser('~/.ti-sheet'))
-use_color = True
 
 if __name__ == '__main__':
     main()

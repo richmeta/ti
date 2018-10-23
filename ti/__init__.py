@@ -346,20 +346,14 @@ def ensure_working():
 
 
 def to_datetime(timestr):
-    return parse_engtime(timestr).isoformat() + 'Z'
+    return parse_engtime(timestr).strftime('%Y-%m-%d %H:%M')
+
 
 
 def parse_engtime(timestr):
 
     if not timestr or timestr.strip() == 'now':
         return NOW
-
-    match = re.match(r'(\d+|a) \s* (s|secs?|seconds?) \s+ ago $',
-                     timestr, re.X)
-    if match is not None:
-        n = match.group(1)
-        seconds = 1 if n == 'a' else int(n)
-        return NOW - timedelta(seconds=seconds)
 
     match = re.match(r'(\d+|a) \s* (mins?|minutes?) \s+ ago $', timestr, re.X)
     if match is not None:
@@ -377,7 +371,7 @@ def parse_engtime(timestr):
 
 
 def parse_isotime(isotime):
-    return datetime.strptime(isotime, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return datetime.strptime(isotime, '%Y-%m-%d %H:%M')
 
 
 def timegap(start_time, end_time):

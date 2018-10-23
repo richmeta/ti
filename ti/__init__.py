@@ -39,7 +39,6 @@ import tempfile
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
-
 import yaml
 
 
@@ -96,7 +95,7 @@ class JsonStore(object):
 
 
 def action_on(name, time):
-    data = store.load()
+    data = STORE.load()
     work = data['work']
 
     if work and 'end' not in work[-1]:
@@ -109,7 +108,7 @@ def action_on(name, time):
     }
 
     work.append(entry)
-    store.dump(data)
+    STORE.dump(data)
 
     print('Start working on ' + name + '.')
 
@@ -117,16 +116,16 @@ def action_on(name, time):
 def action_fin(time, back_from_interrupt=True):
     ensure_working()
 
-    data = store.load()
+    data = STORE.load()
 
     current = data['work'][-1]
     current['end'] = time
-    store.dump(data)
+    STORE.dump(data)
     print('So you stopped working on ' + current['name'] + '.')
 
     if back_from_interrupt and len(data['interrupt_stack']) > 0:
         name = data['interrupt_stack'].pop()['name']
-        store.dump(data)
+        STORE.dump(data)
         action_on(name, time)
         if len(data['interrupt_stack']) > 0:
             print('You are now %d deep in interrupts.'
@@ -140,14 +139,14 @@ def action_interrupt(name, time):
 
     action_fin(time, back_from_interrupt=False)
 
-    data = store.load()
+    data = STORE.load()
     if 'interrupt_stack' not in data:
         data['interrupt_stack'] = []
     interrupt_stack = data['interrupt_stack']
 
     interrupted = data['work'][-1]
     interrupt_stack.append(interrupted)
-    store.dump(data)
+    STORE.dump(data)
 
     action_on('interrupt: ' + name, time)
     print('You are now %d deep in interrupts.' % len(interrupt_stack))
@@ -156,7 +155,7 @@ def action_interrupt(name, time):
 def action_note(content):
     ensure_working()
 
-    data = store.load()
+    data = STORE.load()
     current = data['work'][-1]
 
     if 'notes' not in current:
@@ -164,7 +163,7 @@ def action_note(content):
     else:
         current['notes'].append(content)
 
-    store.dump(data)
+    STORE.dump(data)
 
     print('Yep, noted to ' + current['name'] + '.')
 
@@ -172,14 +171,14 @@ def action_note(content):
 def action_tag(tags):
     ensure_working()
 
-    data = store.load()
+    data = STORE.load()
     current = data['work'][-1]
 
     current['tags'] = set(current.get('tags') or [])
     current['tags'].update(tags)
     current['tags'] = list(current['tags'])
 
-    store.dump(data)
+    STORE.dump(data)
 
     tag_count = len(tags)
     print("Okay, tagged current work with %d tag%s."
@@ -189,7 +188,7 @@ def action_tag(tags):
 def action_status():
     ensure_working()
 
-    data = store.load()
+    data = STORE.load()
     current = data['work'][-1]
 
     start_time = parse_isotime(current['start'])
@@ -199,7 +198,7 @@ def action_status():
 
 
 def action_log(period):
-    data = store.load()
+    data = STORE.load()
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
@@ -255,7 +254,7 @@ def action_edit():
     if "EDITOR" not in os.environ:
         raise NoEditor("Please set the 'EDITOR' environment variable")
 
-    data = store.load()
+    data = STORE.load()
     yml = yaml.safe_dump(data, default_flow_style=False, allow_unicode=True)
 
     cmd = os.getenv('EDITOR')
@@ -276,11 +275,11 @@ def action_edit():
     except:
         raise InvalidYAML("Oops, that YAML doesn't appear to be valid!")
 
-    store.dump(data)
+    STORE.dump(data)
 
 
 def is_working():
-    data = store.load()
+    data = STORE.load()
     return data.get('work') and 'end' not in data['work'][-1]
 
 
@@ -389,6 +388,7 @@ def parse_args(argv=sys.argv):
 
 
 def main():
+
     try:
         fn, args = parse_args()
         fn(**args)
@@ -398,7 +398,7 @@ def main():
         sys.exit(1)
 
 
-store = JsonStore(os.getenv('SHEET_FILE', None) or
+STORE = JsonStore(os.getenv('SHEET_FILE', None) or
                   os.path.expanduser('~/.ti-sheet'))
 
 if __name__ == '__main__':

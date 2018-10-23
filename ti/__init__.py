@@ -193,10 +193,9 @@ def action_status():
     current = data['work'][-1]
 
     start_time = parse_isotime(current['start'])
-    diff = timegap(start_time, NOW)
 
-    print('You have been working on {0} for {1}.'.format(
-        current['name'], diff))
+    print('You have been working on {0} since {1}.'.format(
+        current['name'], start_time.strftime("%H:%M")))
 
 
 def action_log(period):
@@ -208,7 +207,6 @@ def action_log(period):
     if period:
         if period == "today":
             comparedate = NOW
-
         else:
             try:
                 comparedate = datetime.strptime(period, "%Y-%m-%d")
@@ -245,9 +243,6 @@ def action_log(period):
             mins = int(secs // 60)
             secs -= mins * 60
             tmsg.append(str(mins) + ' minute' + ('s' if mins > 1 else ''))
-
-        if secs:
-            tmsg.append(str(secs) + ' second' + ('s' if secs > 1 else ''))
 
         log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
 
@@ -324,33 +319,6 @@ def parse_engtime(timestr):
 
 def parse_isotime(isotime):
     return datetime.strptime(isotime, '%Y-%m-%d %H:%M')
-
-
-def timegap(start_time, end_time):
-    diff = end_time - start_time
-
-    mins = diff.total_seconds() // 60
-
-    if mins == 0:
-        return 'less than a minute'
-    elif mins == 1:
-        return 'a minute'
-    elif mins < 44:
-        return '{} minutes'.format(mins)
-    elif mins < 89:
-        return 'about an hour'
-    elif mins < 1439:
-        return 'about {} hours'.format(mins // 60)
-    elif mins < 2519:
-        return 'about a day'
-    elif mins < 43199:
-        return 'about {} days'.format(mins // 1440)
-    elif mins < 86399:
-        return 'about a month'
-    elif mins < 525599:
-        return 'about {} months'.format(mins // 43200)
-    else:
-        return 'more than a year'
 
 
 def parse_args(argv=sys.argv):

@@ -262,7 +262,8 @@ def action_edit():
 
     try:
         data = yaml.load(yml)
-    except:
+    except (yaml.scanner.ScannerError,
+            yaml.parser.ParserError):
         raise InvalidYAML("Oops, that YAML doesn't appear to be valid!")
 
     STORE.dump(data)

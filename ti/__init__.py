@@ -70,10 +70,6 @@ class BadTime(TIError):
     """Time string can't be parsed."""
 
 
-class BadArguments(TIError):
-    """The command line arguments passed are not valid."""
-
-
 class JsonStore(object):
 
     def __init__(self, filename):

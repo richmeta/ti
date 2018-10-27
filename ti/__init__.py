@@ -36,6 +36,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import argparse
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
@@ -97,14 +98,13 @@ class JsonStore(object):
 def action_on(name, time):
     data = STORE.load()
     work = data['work']
-
     if work and 'end' not in work[-1]:
         raise AlreadyOn("You are already working on %s. Stop it or use a "
                         "different sheet." % (work[-1]['name'],))
 
     entry = {
         'name': name,
-        'start': time,
+        'start': NOW.strftime("%Y-%m-%d") + " " + time,
     }
 
     work.append(entry)
@@ -119,7 +119,7 @@ def action_fin(time, back_from_interrupt=True):
     data = STORE.load()
 
     current = data['work'][-1]
-    current['end'] = time
+    current['end'] = NOW.strftime("%Y-%m-%d") + " " + time
     STORE.dump(data)
     print('So you stopped working on ' + current['name'] + '.')
 
@@ -173,14 +173,15 @@ def action_tag(tags):
 
     data = STORE.load()
     current = data['work'][-1]
-
     current['tags'] = set(current.get('tags') or [])
-    current['tags'].update(tags)
+
+    for tag in tags.split(","):
+        current['tags'].add(tag)
     current['tags'] = list(current['tags'])
 
     STORE.dump(data)
 
-    tag_count = len(tags)
+    tag_count = len(tags.split(","))
     print("Okay, tagged current work with %d tag%s."
           % (tag_count, "s" if tag_count > 1 else ""))
 
@@ -197,33 +198,22 @@ def action_status():
         current['name'], start_time.strftime("%H:%M")))
 
 
-def action_log(period):
+def action_log(startdate, enddate):
     data = STORE.load()
     work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
-    comparedate = None
-    if period:
-        if period == "today":
-            comparedate = NOW
-        else:
-            try:
-                comparedate = datetime.strptime(period, "%Y-%m-%d")
-            except ValueError:
-                print("Please use dateformat yyyy-mm-dd")
     for item in work:
         start_time = parse_isotime(item['start'])
-        if (period and (start_time.year != comparedate.year or
-                        start_time.month != comparedate.month or
-                        start_time.day != comparedate.day)):
-            continue
-
-        if 'end' in item:
-            log[item['name']]['delta'] += (
-                parse_isotime(item['end']) - start_time)
+        if "end" not in item:
+            end_time = NOW
+            current = item["name"]
         else:
-            log[item['name']]['delta'] += NOW - start_time
-            current = item['name']
+            end_time = parse_isotime(item['end'])
+        if (end_time.date() >= startdate.date()
+                and start_time.date() <= enddate.date()):
+            log[item['name']]['delta'] += (
+                end_time - start_time)
 
     name_col_len = 0
 
@@ -320,69 +310,98 @@ def parse_isotime(isotime):
     return datetime.strptime(isotime, '%Y-%m-%d %H:%M')
 
 
-def parse_args(argv=sys.argv):
-    # prog = argv[0]
-    if len(argv) == 1:
-        raise BadArguments("You must specify a command.")
+def validate_time(s):
+    try:
+        return datetime.strptime(s, "%H:%M")
+    except ValueError:
+        msg = "Not a valid time hh:mm: '{0}'.".format(s)
+        raise argparse.ArgumentTypeError(msg)
 
-    head = argv[1]
-    tail = argv[2:]
 
-    if head in ['-h', '--help', 'h', 'help']:
-        raise BadArguments()
+def validate_date(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d")
+    except ValueError:
+        msg = "Not a valid date yyyy-mm-dd: '{0}'. U".format(s)
+        raise argparse.ArgumentTypeError(msg)
 
-    elif head in ['e', 'edit']:
-        fn = action_edit
-        args = {}
 
-    elif head in ['o', 'on']:
-        if not tail:
-            raise BadArguments("Need the name of whatever you are working on.")
+def parse_args():
+    parser = argparse.ArgumentParser(description="ti is a simple and "
+                                     + "extensible time tracker for the"
+                                     + "command line.", prog="ti")
+    parser.add_argument("-o", "--on", action="store",
+                        help="start an action to work on")
+    parser.add_argument("--at", action="store", help="start or stop actions at"
+                        + "special time",
+                        default=datetime.now().strftime("%H:%M"),
+                        type=validate_time)
+    parser.add_argument("-l", "--log", action="store_true",
+                        help="show log", default=False)
+    parser.add_argument("--start", action="store",
+                        help="show log from",
+                        default=datetime.now().strftime("%Y-%m-%d"),
+                        type=validate_date)
+    parser.add_argument("--end", action="store",
+                        help="show log from",
+                        default=datetime.now().strftime("%Y-%m-%d"),
+                        type=validate_date)
+    parser.add_argument("-f", "--fin", action="store_true",
+                        help="end an action")
+    parser.add_argument("-t", "--tag", action="store",
+                        help="at commasaperated tags to current task")
+    parser.add_argument("-s", "--status", action="store_true",
+                        help="show status", default=False)
+    parser.add_argument("-e", "--edit", action="store_true",
+                        help="show status", default=False)
+    parser.add_argument("-i", "--interrupt", action="store",
+                        help="interrupt the current task with a new tas.")
+    parser.add_argument("--note", action="store",
+                        help="add a note to the current task")
 
+    arguments = parser.parse_args()
+    print(arguments)
+    if arguments.on:
         fn = action_on
         args = {
-            'name': tail[0],
-            'time': to_datetime(' '.join(tail[1:])),
+            'name': arguments.on,
+            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
         }
-
-    elif head in ['f', 'fin']:
-        fn = action_fin
-        args = {'time': to_datetime(' '.join(tail))}
-
-    elif head in ['s', 'status']:
-        fn = action_status
-        args = {}
-
-    elif head in ['l', 'log']:
-        fn = action_log
-        args = {'period': tail[0] if tail else None}
-
-    elif head in ['t', 'tag']:
-        if not tail:
-            raise BadArguments("Please provide at least one tag to add.")
-
-        fn = action_tag
-        args = {'tags': tail}
-
-    elif head in ['n', 'note']:
-        if not tail:
-            raise BadArguments("Please provide some text to be noted.")
-
-        fn = action_note
-        args = {'content': ' '.join(tail)}
-
-    elif head in ['i', 'interrupt']:
-        if not tail:
-            raise BadArguments("Need the name of whatever you are working on.")
-
+    if arguments.interrupt:
         fn = action_interrupt
         args = {
-            'name': tail[0],
-            'time': to_datetime(' '.join(tail[1:])),
+            'name': arguments.interrupt,
+            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
         }
 
+    elif arguments.log:
+        fn = action_log
+        args = {
+            'startdate': arguments.start,
+            'enddate': arguments.end
+        }
+    elif arguments.fin:
+        fn = action_fin
+        print(arguments.fin)
+        args = {
+            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
+        }
+    elif arguments.tag:
+        fn = action_tag
+        args = {
+            'tags': str(arguments.tag)
+        }
+    elif arguments.status:
+        fn = action_status
+        args = {}
+    elif arguments.edit:
+        fn = action_edit
+        args = {}
+    elif arguments.note:
+        fn = action_note
+        args = {'content': arguments.note}
     else:
-        raise BadArguments("I don't understand %r" % (head,))
+        parser.print_help
 
     return fn, args
 

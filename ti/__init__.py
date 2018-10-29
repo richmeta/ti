@@ -323,7 +323,7 @@ def validate_date(s):
         raise argparse.ArgumentTypeError(msg)
 
 
-def parse_args():
+def main():
     parser = argparse.ArgumentParser(description="ti is a simple and "
                                      + "extensible time tracker for the"
                                      + "command line.", prog="ti")
@@ -356,61 +356,33 @@ def parse_args():
     parser.add_argument("--note", action="store",
                         help="add a note to the current task")
 
-    arguments = parser.parse_args()
-    print(arguments)
-    if arguments.on:
-        fn = action_on
-        args = {
-            'name': arguments.on,
-            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
-        }
-    if arguments.interrupt:
-        fn = action_interrupt
-        args = {
-            'name': arguments.interrupt,
-            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
-        }
-
-    elif arguments.log:
-        fn = action_log
-        args = {
-            'startdate': arguments.start,
-            'enddate': arguments.end
-        }
-    elif arguments.fin:
-        fn = action_fin
-        print(arguments.fin)
-        args = {
-            'time': str(arguments.at.hour) + ":" + str(arguments.at.minute)
-        }
-    elif arguments.tag:
-        fn = action_tag
-        args = {
-            'tags': str(arguments.tag)
-        }
-    elif arguments.status:
-        fn = action_status
-        args = {}
-    elif arguments.edit:
-        fn = action_edit
-        args = {}
-    elif arguments.note:
-        fn = action_note
-        args = {'content': arguments.note}
-    else:
-        parser.print_help
-
-    return fn, args
-
-
-def main():
-
     try:
-        fn, args = parse_args()
-        fn(**args)
+        arguments = parser.parse_args()
+        if arguments.on:
+            action_on(arguments.on, str(arguments.at.hour) + ":"
+                      + str(arguments.at.minute))
+        elif arguments.interrupt:
+            action_interrupt(arguments.interrupt, str(arguments.at.hour)
+                             + ":" + str(arguments.at.minute))
+        elif arguments.log:
+            action_log(arguments.start, arguments.end)
+        elif arguments.fin:
+            action_fin(str(arguments.at.hour) + ":" + str(arguments.at.minute))
+        elif arguments.tag:
+            action_tag(str(arguments.tag))
+        elif arguments.status:
+            action_status()
+        elif arguments.edit:
+            action_edit()
+        elif arguments.note:
+            action_note(arguments.note)
+        else:
+            parser.print_help()
+
     except TIError as e:
         msg = str(e) if len(str(e)) > 0 else __doc__
         print(msg, file=sys.stderr)
+        parser.print_help()
         sys.exit(1)
 
 

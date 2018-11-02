@@ -197,8 +197,8 @@ def action_status():
 def action_log(startdate, enddate):
     data = STORE.load()
     work = data['work'] + data['interrupt_stack']
-    log = defaultdict(lambda: {'delta': timedelta()})
     current = None
+    tagList = defaultdict(lambda: {'delta': timedelta(), 'items': {}})
     for item in work:
         start_time = parse_isotime(item['start'])
         if "end" not in item:
@@ -206,34 +206,45 @@ def action_log(startdate, enddate):
             current = item["name"]
         else:
             end_time = parse_isotime(item['end'])
+        if "tags" not in item:
+            item["tags"] = ["_noTag_"]
         if (end_time.date() >= startdate.date()
                 and start_time.date() <= enddate.date()):
-            log[item['name']]['delta'] += (
-                end_time - start_time)
-
+            delta = end_time - start_time
+            for tag in item["tags"]:
+                tagList[tag]['delta'] += delta
+                if item['name'] in tagList[tag]:
+                    tagList[tag]['items'][item['name']] += delta
+                else:
+                    tagList[tag]['items'][item['name']] = delta
     name_col_len = 0
+    for tag, items in sorted(tagList.items(), key=(lambda x: x[0])):
+        print(tag.ljust(max(name_col_len, len(tag))),
+              "--",
+              time_to_string(items["delta"]))
+        for name, delta in sorted(items["items"].items(),
+                                  key=(lambda x: x[0]),
+                                  reverse=True):
+            print("\t", name.ljust(max(name_col_len, len(name))),
+                  ' ∙∙ ',
+                  time_to_string(delta),
+                  end=' ← working\n' if current == name else '\n')
 
-    for name, item in log.items():
-        name_col_len = max(name_col_len, len(name))
 
-        secs = item['delta'].total_seconds()
-        tmsg = []
+def time_to_string(time):
+    secs = time.total_seconds()
+    tmsg = []
 
-        if secs > 3600:
-            hours = int(secs // 3600)
-            secs -= hours * 3600
-            tmsg.append(str(hours) + ' hour' + ('s' if hours > 1 else ''))
+    if secs > 3600:
+        hours = int(secs // 3600)
+        secs -= hours * 3600
+        tmsg.append(str(hours) + ' hour' + ('s' if hours > 1 else ''))
 
-        if secs > 60:
-            mins = int(secs // 60)
-            secs -= mins * 60
-            tmsg.append(str(mins) + ' minute' + ('s' if mins > 1 else ''))
-
-        log[name]['tmsg'] = ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
-
-    for name, item in sorted(log.items(), key=(lambda x: x[0]), reverse=True):
-        print(name.ljust(name_col_len), ' ∙∙ ', item['tmsg'],
-              end=' ← working\n' if current == name else '\n')
+    if secs > 60:
+        mins = int(secs // 60)
+        secs -= mins * 60
+        tmsg.append(str(mins) + ' minute' + ('s' if mins > 1 else ''))
+    return ', '.join(tmsg)[::-1].replace(',', '& ', 1)[::-1]
 
 
 def action_edit():

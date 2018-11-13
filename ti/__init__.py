@@ -213,7 +213,7 @@ def action_log(startdate, enddate):
             delta = end_time - start_time
             for tag in item["tags"]:
                 tagList[tag]['delta'] += delta
-                if item['name'] in tagList[tag]:
+                if item['name'] in tagList[tag]['items'].keys():
                     tagList[tag]['items'][item['name']] += delta
                 else:
                     tagList[tag]['items'][item['name']] = delta

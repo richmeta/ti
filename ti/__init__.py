@@ -120,9 +120,10 @@ def action_fin(time, back_from_interrupt=True):
     print('So you stopped working on ' + current['name'] + '.')
 
     if back_from_interrupt and len(data['interrupt_stack']) > 0:
-        name = data['interrupt_stack'].pop()['name']
+        entry = data['interrupt_stack'].pop()
         STORE.dump(data)
-        action_on(name, time)
+        action_on(entry["name"], time)
+        action_tag(entry["tags"])
         if len(data['interrupt_stack']) > 0:
             print('You are now %d deep in interrupts.'
                   % len(data['interrupt_stack']))
@@ -171,13 +172,13 @@ def action_tag(tags):
     current = data['work'][-1]
     current['tags'] = set(current.get('tags') or [])
 
-    for tag in tags.split(","):
+    for tag in tags:
         current['tags'].add(tag)
     current['tags'] = list(current['tags'])
 
     STORE.dump(data)
 
-    tag_count = len(tags.split(","))
+    tag_count = len(tags)
     print("Okay, tagged current work with %d tag%s."
           % (tag_count, "s" if tag_count > 1 else ""))
 
@@ -380,7 +381,7 @@ def main():
         elif arguments.fin:
             action_fin(str(arguments.at.hour) + ":" + str(arguments.at.minute))
         elif arguments.tag:
-            action_tag(str(arguments.tag))
+            action_tag(str(arguments.tag).split(","))
         elif arguments.status:
             action_status()
         elif arguments.edit:

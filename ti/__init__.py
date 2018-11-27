@@ -337,16 +337,26 @@ def validate_date(s):
 
 def main():
     parser = argparse.ArgumentParser(description="ti is a simple and "
-                                     + "extensible time tracker for the"
+                                     + "extensible time tracker for the "
                                      + "command line.", prog="ti")
-    parser.add_argument("-o", "--on", action="store",
-                        help="start an action to work on")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-o", "--on", action="store",
+                       help="start an action to work on")
+    group.add_argument("-f", "--fin", action="store_true",
+                       help="end an action")
+    group.add_argument("-s", "--status", action="store_true",
+                       help="show status", default=False)
+    group.add_argument("-e", "--edit", action="store_true",
+                       help="edit saved tasks", default=False)
+    group.add_argument("-i", "--interrupt", action="store",
+                       help="interrupt the current task with a new task")
+
+    group.add_argument("-l", "--log", action="store_true",
+                       help="show log", default=False)
     parser.add_argument("--at", action="store", help="start or stop actions at"
                         + "special time",
                         default=datetime.now().strftime("%H:%M"),
                         type=validate_time)
-    parser.add_argument("-l", "--log", action="store_true",
-                        help="show log", default=False)
     parser.add_argument("--start", action="store",
                         help="show log from",
                         default=datetime.now().strftime("%Y-%m-%d"),
@@ -355,16 +365,8 @@ def main():
                         help="show log from",
                         default=datetime.now().strftime("%Y-%m-%d"),
                         type=validate_date)
-    parser.add_argument("-f", "--fin", action="store_true",
-                        help="end an action")
     parser.add_argument("-t", "--tag", action="store",
-                        help="at commasaperated tags to current task")
-    parser.add_argument("-s", "--status", action="store_true",
-                        help="show status", default=False)
-    parser.add_argument("-e", "--edit", action="store_true",
-                        help="show status", default=False)
-    parser.add_argument("-i", "--interrupt", action="store",
-                        help="interrupt the current task with a new tas.")
+                        help="add commasaperated tags to current task")
     parser.add_argument("--note", action="store",
                         help="add a note to the current task")
 
@@ -373,23 +375,21 @@ def main():
         if arguments.on:
             action_on(arguments.on, str(arguments.at.hour) + ":"
                       + str(arguments.at.minute))
-        elif arguments.interrupt:
+        if arguments.interrupt:
             action_interrupt(arguments.interrupt, str(arguments.at.hour)
                              + ":" + str(arguments.at.minute))
-        elif arguments.log:
+        if arguments.log:
             action_log(arguments.start, arguments.end)
-        elif arguments.fin:
+        if arguments.fin:
             action_fin(str(arguments.at.hour) + ":" + str(arguments.at.minute))
-        elif arguments.tag:
+        if arguments.tag:
             action_tag(str(arguments.tag).split(","))
-        elif arguments.status:
+        if arguments.status:
             action_status()
-        elif arguments.edit:
+        if arguments.edit:
             action_edit()
-        elif arguments.note:
+        if arguments.note:
             action_note(arguments.note)
-        else:
-            parser.print_help()
 
     except TIError as e:
         msg = str(e) if len(str(e)) > 0 else __doc__

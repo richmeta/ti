@@ -223,6 +223,12 @@ handled, but should be, please open an issue about it or a pull request
     - ``a`` or ``an`` in place of *n* in all above cases, to mean 1 hour.
     - E.g., ``an hour ago``, ``an hr ago``, ``2hrs ago``.
 
+- *n* days ago can be written as:
+    - *n* days ago
+    - *n* ds ago
+    - ``a`` in place of *n* in all above cases, to mean 1 day.
+    - E.g., ``a day ago``, ``2ds ago``.
+
 Where *n* is an arbitrary number and any number of spaces between *n* and the
 time unit are allowed (including zero spaces).
 

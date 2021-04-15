@@ -355,6 +355,12 @@ def parse_engtime(timestr):
         n = match.group(1)
         hours = 1 if n in ['a', 'an'] else int(n)
         return now - timedelta(hours=hours)
+      
+    match = re.match(r'(\d+|a) \s* (ds?|days?) \s+ ago $', timestr, re.X)
+    if match is not None:
+        n = match.group(1)
+        days = 1 if n in ['a'] else int(n)
+        return now - timedelta(hours=24*days)
 
     raise BadTime("Don't understand the time %r" % (timestr,))
 
